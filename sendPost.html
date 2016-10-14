@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<title>Poster</title>
+<head>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript">
+
+JSONClothing = function() {
+
+    var resultDiv = $("#resultDivContainer");
+
+    //We should consider how to enforce JSON schema by using the "require" schema with json entries
+    jsonData = { 
+        UPC: "639382-00039",
+        measurements: "10, 11, 12",
+        store: "walmart"
+
+    };
+
+    $.ajax({
+        url: "http://localhost:8080/clothing",
+        type: "POST",
+        data: jsonData,
+        dataType: "json",
+        success: function (result) {
+            switch (result) {
+                case true:
+                    processResponse(result);
+                    break;
+                default:
+                    resultDiv.html(result);
+            }
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+        alert(xhr.status);
+        alert(thrownError);
+        }
+    });
+};
+
+JSONProfile = function() {
+
+    var resultDiv = $("#resultDivContainer");
+
+    //We should consider how to enforce JSON schema by using the "require" schema with json entries
+    jsonData = { 
+        emailID: "testcase@mail.com", 
+        firstName: "John", 
+        lastName: "Smith",
+        userMeasurements: [{"name": "waistCircumference", "value": 32},{"name": "neckCircumference", "value": 16}]
+    };
+
+    $.ajax({
+        url: "http://localhost:8080/profile",
+        type: "POST",
+        data: JSON.stringify(jsonData),
+        dataType: "json",
+        success: function (result) {
+            switch (result) {
+                case true:
+                    processResponse(result);
+                    break;
+                default:
+                    resultDiv.html(result);
+            }
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+        alert(xhr.status);
+        alert(thrownError);
+        }
+    });
+};
+
+</script>
+</head>
+<body>
+
+<h1> JSON Post Widget </h1>
+
+<div id="resultDivContainer"></div>
+
+<button type="button" onclick="JSONProfile()">Post Profile</button>
+
+<button type="button" onclick="JSONClothing()">Post Clothing</button>
+
+</body>
+</html> 
