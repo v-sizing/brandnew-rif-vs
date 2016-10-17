@@ -1,12 +1,9 @@
 # Copyright 2016 Table Top Inventing
 # All rights reserved.
 
-#import cgi
 import json
-#import urllib
 import webapp2
 from google.appengine.ext import ndb
-
 
 class Measurement(ndb.Model):
     name = ndb.StringProperty()
@@ -16,6 +13,7 @@ class UserMorphology(ndb.Model):
     emailID = ndb.StringProperty()
     mPairs = ndb.StructuredProperty(Measurement, repeated=True)
     date = ndb.DateTimeProperty(auto_now_add=True)
+
     @classmethod
     def query_morph(cls, user_key):
         return cls.query(ancestor=user_key)
@@ -40,7 +38,6 @@ class ManageProfile(webapp2.RequestHandler):
         uPair = [Measurement(**item) for item in uM]  # this steps through the dictionary items from the dictionary list (uM), then it unpacks the dictionary item into measured pair, but it works because the input is assumed to have the form [{"name": "waistCircumference", "value": 32},{"name": "neckCircumference", "value": 16}]
         userMorph = UserMorphology(parent = ndb.Key("Profile", j['emailID'] or "*notitle*"),
             emailID = j['emailID'], mPairs = uPair)
-#        print "Morpho:  ", userMorph.mPairs
         userMorph.put()
         #TODO emailID is a required field.  Eventually we should check and enforce it, sending back a 400 Bad Request code
         thisProfile = Profile(parent=ndb.Key("Profile",
