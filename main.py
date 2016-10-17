@@ -1,20 +1,67 @@
 # Copyright 2016 Table Top Inventing
 # All rights reserved.
 
-import cgi
-import urllib
+import json
 import webapp2
 from google.appengine.ext import ndb
+
+
+class measurePair(ndb.Model):
+    name = ndb.StringProperty()
+    value = ndb.FloatProperty()
+
+class userMorphology(ndb.Model):
+    emailID = ndb.StringProperty()
+    mPairs = ndb.StructuredProperty(measurePair, repeated=True)
+    date = ndb.DateTimeProperty(auto_now_add=True)
+
+    @classmethod
+    def query_morph(cls, user_key):
+        return cls.query(ancestor=user_key)
 
 class Profile(ndb.Model):
     emailID = ndb.StringProperty()
     firstName = ndb.StringProperty()
     lastName = ndb.StringProperty()
+    userMeasurements = ndb.JsonProperty()
     date = ndb.DateTimeProperty(auto_now_add=True)
 
     @classmethod
     def query_profile(cls, user_key):
         return cls.query(ancestor=user_key)
+
+# This class handles both the post AND get methods for Profiles
+class manageProfile(webapp2.RequestHandler):
+    def post(self):
+        # This section needed to parse the userMeasurements section of the post body
+        j = json.loads(self.request.body)
+        uM = j['userMeasurements']  # this is a list of dict objectts
+        uPair = [measurePair(**item) for item in uM]  # this steps through the dictionary items from the dictionary list (uM), then it unpacks the dictionary item into measured pair, but it works because the input is assumed to have the form [{"name": "waistCircumference", "value": 32},{"name": "neckCircumference", "value": 16}]
+        userMorph = userMorphology(parent = ndb.Key("Profile", j['emailID'] or "*notitle*"),
+            emailID = j['emailID'], mPairs = uPair)
+        userMorph.put()
+
+        thisProfile = Profile(parent=ndb.Key("Profile",
+                                           j['emailID'] or "*notitle*"),
+                            emailID=j['emailID'],
+                            firstName=j['firstName'],
+                            lastName=j['lastName'])
+        thisProfile.put()
+
+    def get(self):
+        self.response.out.write('<html><body>Your profile info.</br></br>')
+        # The following requires a way to determine which profile (login, etc.)
+        # currently use something like this:  http://localhost:8080/profile?userID=testcase@mail.com
+        userID = self.request.get('userID')
+        user_key = ndb.Key("Profile", userID)
+        morph_key = ndb.Key("Profile", userID)
+        thatProfile = Profile.query_profile(user_key).get()
+        thatMorph = userMorphology.query_morph(morph_key).get()
+        self.response.out.write('email:  ' + thatProfile.emailID + '</br>')
+        self.response.out.write('First name:  ' + thatProfile.firstName + '</br>')
+        self.response.out.write('Last name:  ' + thatProfile.lastName + '</br>')
+        self.response.out.write('Pairs:  ' + thatMorph.emailID + '</br>')
+        self.response.out.write('</html></body>')
 
 class Clothing(ndb.Model):
     UPC= ndb.StringProperty()
@@ -25,28 +72,6 @@ class Clothing(ndb.Model):
     @classmethod
     def query_clothing(cls, user_key):
         return cls.query(ancestor=user_key)
-
-# This class handles both the post AND get methods for Profiles
-class manageProfile(webapp2.RequestHandler):
-    def post(self):
-        emailID = self.request.get('emailID')
-        thisProfile = Profile(parent=ndb.Key("Profile",
-                                           emailID or "*notitle*"),
-                            emailID=self.request.get('emailID'),
-                            firstName=self.request.get('firstName'),
-                            lastName=self.request.get('lastName'))
-        thisProfile.put()
-    def get(self):
-        self.response.out.write('<html><body>Your profile info.</br></br>')
-        # The following requires a way to determine which profile (login, etc.)
-        # currently use something like this:  http://localhost:8080/profile?userID=testcase@mail.com
-        userID = self.request.get('userID')
-        user_key = ndb.Key("Profile", userID)
-        thatProfile = Profile.query_profile(user_key).get()
-        self.response.out.write('email:  ' + thatProfile.emailID + '</br>')
-        self.response.out.write('First name:  ' + thatProfile.firstName + '</br>')
-        self.response.out.write('Last name:  ' + thatProfile.lastName + '</br>')
-        self.response.out.write('</html></body>')
 
 # This class handles both the post AND get methods for Clothing
 class manageClothing(webapp2.RequestHandler):
